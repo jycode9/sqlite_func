@@ -8,4 +8,3 @@ cd /d %vs_path%
 call vcvars64.bat
 cd /d %lib_path%/build 
 devenv sqlite3.sln /build
-echo ****Note: gen lib done****
