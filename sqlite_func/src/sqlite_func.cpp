@@ -7,10 +7,11 @@ void functest() {
 
     //做成单例之后，使用宏定义将column、value进行简化
     //my_sql.insertData("USER", my_sql.Columns("ID", "NAME"), my_sql.Values("4", "'WENJY4'"));
-    my_sql.insertData("USER", my_sql.Values("5", "'WENJY5'"));
+    //my_sql.insertData("USER2", my_sql.Values("3", "'NAME_3'", "1"));
 
-    my_sql.updateData("USER", my_sql.Columns("NAME"), my_sql.Values("'LILI'"));
-    //my_sql.updateData("USER", my_sql.Columns("NAME"), my_sql.Values("LILI"), my_sql.Where("ID==1"), my_sql.And("AGE==23"));
+    //my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'LILI'"));
+    //my_sql.updateData("USER", my_sql.Columns("ID"), my_sql.Values("10"), my_sql.Where("NAME=='WENJY'"));
+    my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'LILI'"), my_sql.Where("NAME=='Sam1'"), my_sql.And("ID>=2", "AGE>=10"));
 
     //my_sql.deleteData("USER", "NAME", "'Jam'");
 

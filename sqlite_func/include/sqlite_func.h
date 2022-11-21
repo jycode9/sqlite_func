@@ -50,6 +50,18 @@ public:
 	template<typename T, typename ...Args>
 	void* Columns(T column, Args ...columns);
 
+	void* Where(char* condition);
+
+	template<typename T>
+	void* And(T condition);
+	template<typename T, typename ...Args>
+	void* And(T condition, Args ...conditions);
+
+	template<typename T>
+	void* Or(T condition);
+	template<typename T, typename ...Args>
+	void* Or(T condition, Args ...conditions);
+
 
 	//插入：指定表头
 	int insertData(const char* tablename, void* columns, void* values);
@@ -62,12 +74,15 @@ public:
 	//	  where NAME='Sam' and AGE>=32;
 	//希望的函数结构：sql.updateData("USER", sql.setcolumns("SCORE", "POWER"), sql.setvalues(23, 3), 
 	//									sql.where("NAME", "='Sam'"), sql.and("AGE", ">=30"));
-	//更新：可动态增加where的条件and、or
+	//更新：全部修改
 	int updateData(const char* tablename, void* columns, void* values);
-	template<typename T>
-	int updateData(const char* tablename, void* columns, void* values, T where);
-	template<typename T, typename ...Args> 
-	int updateData(const char* tablename, void* columns, void* values, T where, Args ...wheres);
+	//更新：where索引修改
+	int updateData(const char* tablename, void* columns, void* values, void* where);
+	//更新：where可增加条件索引的修改
+	//template<typename T, typename ...Args> 
+	//int updateData(const char* tablename, void* columns, void* values, T where, Args ...wheres);
+	int updateData(const char* tablename, void* columns, void* values, void* where, void* condition);
+	int updateData(const char* tablename, void* columns, void* values, void* where, void* condition1, void* condition2);
 
 	//int deleteData(const char* tablename, const char* where_column, const char* where_value);
 
@@ -177,8 +192,54 @@ void* sqlfunc::Columns(T column, Args ...columns) {
 	this->Columns(columns...);
 
 	return SQLITE_OK;
-
 }
+
+void* sqlfunc::Where(char* condition) {
+
+	this->where_vec.push_back(condition);
+	std::cout << "the vec where is: " << this->where_vec[0] << std::endl;
+
+	return SQLITE_OK;
+}
+
+template<typename T>
+void* sqlfunc::And(T condition) {
+	this->and_vec.push_back((char*)condition);
+
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		std::cout << "the vec and is: " << this->and_vec[i] << std::endl;
+	}
+	return SQLITE_OK;
+}
+
+template<typename T, typename ...Args>
+void* sqlfunc::And(T condition, Args ...conditions) {
+	this->and_vec.push_back((char*)condition);
+	this->And(conditions...);
+
+	return SQLITE_OK;
+}
+
+template<typename T>
+void* sqlfunc::Or(T condition) {
+	this->or_vec.push_back((char*)condition);
+
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		std::cout << "the vec or is: " << this->or_vec[i] << std::endl;
+	}
+	return SQLITE_OK;
+}
+
+template<typename T, typename ...Args>
+void* sqlfunc::Or(T condition, Args ...conditions) {
+	this->or_vec.push_back((char*)condition);
+	this->Or(conditions...);
+
+	return SQLITE_OK;
+}
+
+
+
 
 
 
@@ -193,20 +254,20 @@ int sqlfunc::insertData(const char* tablename, void* columns, void* values){
 
 	//INSERT INTO USER(ID,NAME,SCORE) VALUES(1,'WENJY',20.98);
 	//便利vector内容，将数据匹配
-	char sql_tablename[20] = "";
-	char sql_columns[20] = "(";
-	char sql_values[20]="VALUES(";
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_columns[CHAR_MAX] = "(";
+	char sql_values[CHAR_MAX]="VALUES(";
 
 	//这里的sql_word必须使用static的原因是？char其实是一种数组，当定义的数组长度太小时，插入内容过多就造成数据溢出了
 	//想要解决这个问题，最好的就是使用char*指针来解决，这样就不限于字符长度了
-	 char sql_word[60]="INSERT INTO ";
+	 char sql_word[CHAR_MAX]="INSERT INTO ";
 
 	strcpy(sql_tablename, tablename);
 	strcat(sql_word, sql_tablename);
 
 	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
 		
-		char t_column[20] = "";
+		char t_column[CHAR_MAX] = "";
 		strcpy(t_column, this->columns_vec[i]);
 		strcat(sql_columns, t_column);
 		if (i!=this->columns_vec.size()-1) {
@@ -216,12 +277,12 @@ int sqlfunc::insertData(const char* tablename, void* columns, void* values){
 	strcat(sql_columns, ") ");
 
 
-	for (unsigned int j = 0; j < this->values_vec.size(); j++) {
+	for (unsigned int i = 0; i < this->values_vec.size(); i++) {
 
-		char t_value[20] = "";
-		strcpy(t_value, this->values_vec[j]);
+		char t_value[CHAR_MAX] = "";
+		strcpy(t_value, this->values_vec[i]);
 		strcat(sql_values, t_value);
-		if (j != this->values_vec.size() - 1) {
+		if (i != this->values_vec.size() - 1) {
 			strcat(sql_values, ",");
 		}
 	}
@@ -249,24 +310,24 @@ int sqlfunc::insertData(const char* tablename, void* columns, void* values){
 //默认表头
 int sqlfunc::insertData(const char* tablename, void* values) {
 	//创建char变量时候赋值空值也是为了做到初始化
-	char sql_tablename[20] = "";
-	char sql_values[20] = "VALUES(";
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_values[CHAR_MAX] = "VALUES(";
 
 	//这里的sql_word必须使用static的原因是？char其实是一种数组，当定义的数组长度太小时，插入内容过多就造成数据溢出了
 	//想要解决这个问题，最好的就是使用char*指针来解决，这样就不限于字符长度了
-	char sql_word[60] = "INSERT INTO ";
+	char sql_word[CHAR_MAX] = "INSERT INTO ";
 
 	//应该不需要检测column和value的数量是否对应，sqlite3底层可以识别的
 	strcpy(sql_tablename, tablename);
 	strcat(sql_word, sql_tablename);
 	strcat(sql_word, " ");
 
-	for (unsigned int j = 0; j < this->values_vec.size(); j++) {
+	for (unsigned int i = 0; i < this->values_vec.size(); i++) {
 
-		char t_value[20] = "";
-		strcpy(t_value, this->values_vec[j]);
+		char t_value[CHAR_MAX] = "";
+		strcpy(t_value, this->values_vec[i]);
 		strcat(sql_values, t_value);
-		if (j != this->values_vec.size() - 1) {
+		if (i != this->values_vec.size() - 1) {
 			strcat(sql_values, ",");
 		}
 	}
@@ -299,12 +360,12 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values) {
 
 	//UPDATE table_name SET column1=value1...., columnN=valueN WHERE ID=6;;
 	//创建char变量时候赋值空值也是为了做到初始化
-	char sql_tablename[20] = "";
-	char sql_set[20] = "SET ";
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_set[CHAR_MAX] = "SET ";
 
 	//这里的sql_word必须使用static的原因是？char其实是一种数组，当定义的数组长度太小时，插入内容过多就造成数据溢出了
 	//想要解决这个问题，最好的就是使用char*指针来解决，这样就不限于字符长度了
-	char sql_word[60] = "UPDATE ";
+	char sql_word[CHAR_MAX] = "UPDATE ";
 
 	//应该不需要检测column和value的数量是否对应，sqlite3底层可以识别的
 	strcpy(sql_tablename, tablename);
@@ -313,9 +374,9 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values) {
 
 	//将column和value进行组合，拼接到set中
 	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
-		char t_column[20] = "";
-		char t_value[20] = "";
-		char t_set[20] = "";
+		char t_column[CHAR_MAX] = "";
+		char t_value[CHAR_MAX] = "";
+		char t_set[CHAR_MAX] = "";
 
 		strcpy(t_column, this->columns_vec[i]);
 		strcpy(t_value, this->values_vec[i]);
@@ -332,7 +393,7 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values) {
 	strcat(sql_word, sql_set);
 	strcat(sql_word, ";");
 
-	std::cout << "uodate(no where) words is: " << sql_word << std::endl;
+	std::cout << "update(no where) words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -350,10 +411,8 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values) {
 
 }
 
-
 //一个where条件update
-template<typename T>
-int sqlfunc::updateData(const char* tablename, void* columns, void* values, T where) {
+int sqlfunc::updateData(const char* tablename, void* columns, void* values, void* where) {
 
 	//检测columns_vec和values_vec的大小是否相等
 	if (this->columns_vec.size() != this->values_vec.size()) {
@@ -361,20 +420,22 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, T wh
 		return SQLITE_ERROR;
 	}
 	//where只能小于等于1
-	if (this->where_vec.size() > 1) {
+	if (this->where_vec.size() != 1) {
 		this->initVec();
 		return SQLITE_ERROR;
 	}
 
 	//UPDATE table_name SET column1=value1...., columnN=valueN WHERE ID=6;;
 	//创建char变量时候赋值空值也是为了做到初始化
-	char sql_tablename[20] = "";
-	char sql_set[20] = "SET ";
-	char sql_where[20] = "";
+	//现在最大的问题是字符的长度。因为参数输入的长度是不定长的。但是定义一个过长的数据显然是浪费的
+	//这里可以利用那个输入完的vec，获取char*的总长度，然后在此基础上创建动态的char
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_set[CHAR_MAX] = "SET ";
+	char sql_where[CHAR_MAX] = "";
 
 	//这里的sql_word必须使用static的原因是？char其实是一种数组，当定义的数组长度太小时，插入内容过多就造成数据溢出了
 	//想要解决这个问题，最好的就是使用char*指针来解决，这样就不限于字符长度了
-	char sql_word[60] = "UPDATE ";
+	char sql_word[CHAR_MAX] = "UPDATE ";
 
 	//应该不需要检测column和value的数量是否对应，sqlite3底层可以识别的
 	strcpy(sql_tablename, tablename);
@@ -383,9 +444,9 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, T wh
 
 	//将column和value进行组合，拼接到set中
 	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
-		char t_column[20] = "";
-		char t_value[20] = "";
-		char t_set[20] = "";
+		char t_column[CHAR_MAX] = "";
+		char t_value[CHAR_MAX] = "";
+		char t_set[CHAR_MAX] = "";
 
 		strcpy(t_column, this->columns_vec[i]);
 		strcpy(t_value, this->values_vec[i]);
@@ -396,6 +457,8 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, T wh
 		if (i != this->columns_vec.size() - 1) {
 			strcat(t_set, ",");
 		}
+
+		strcat(sql_set, t_set);
 	}
 	strcat(sql_set, " ");
 
@@ -403,15 +466,13 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, T wh
 	if (this->where_vec.size() == 1) {
 		strcat(sql_where, "WHERE ");
 		strcat(sql_where, this->where_vec[0]);
-		strcat(sql_where, " ");
 	}
-
 
 	strcat(sql_word, sql_set);
 	strcat(sql_word, sql_where);
 	strcat(sql_word, ";");
 
-	std::cout << "uodate(1 where) words is: " << sql_word << std::endl;
+	std::cout << "update(1 where) words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -429,139 +490,114 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, T wh
 
 }
 
+//多个where，综合and、or的update
+int sqlfunc::updateData(const char* tablename, void* columns, void* values, void* where, void* condition) {
+	int rec = this->updateData(tablename, columns, values, where, condition, NULL);
+	return rec;
+}
 
+//多个where，综合and、or的update
+int sqlfunc::updateData(const char* tablename, void* columns, void* values, void* where, void* condition1, void* condition2){
 
+	//检测columns_vec和values_vec的大小是否相等
+	if (this->columns_vec.size() != this->values_vec.size()) {
+		this->initVec();
+		return SQLITE_ERROR;
+	}
+	//where只能为1
+	if (this->where_vec.size() != 1) {
+		this->initVec();
+		return SQLITE_ERROR;
+	}
 
-template<typename T, typename ...Args>
-int updateData(const char* tablename, void* columns, void* values, T where, Args ...wheres);
+	//UPDATE table_name SET column1=value1...., columnN=valueN WHERE ID=6;;
+	//创建char变量时候赋值空值也是为了做到初始化
+	//现在最大的问题是字符的长度。因为参数输入的长度是不定长的。但是定义一个过长的数据显然是浪费的
+	//这里可以利用那个输入完的vec，获取char*的总长度，然后在此基础上创建动态的char
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_set[CHAR_MAX] = "SET ";
+	char sql_where[CHAR_MAX] = "";
+	char sql_and[CHAR_MAX] = "";
+	char sql_or[CHAR_MAX] = "";
 
+	//这里的sql_word必须使用static的原因是？char其实是一种数组，当定义的数组长度太小时，插入内容过多就造成数据溢出了
+	//想要解决这个问题，最好的就是使用char*指针来解决，这样就不限于字符长度了
+	char sql_word[CHAR_MAX] = "UPDATE ";
 
-
-/*
-int sqlfunc::updateData(const char* tablename, const char* where_column, const char* where_value,
-	const char* set_word, const char* set_value) {
-
-	UPDATE COMPANY SET ADDRESS = 'Texas' WHERE ID = 6;
-	char sql_tablename[20];
-	char sql_where_column[20];
-	char sql_where_value[20];
-	char sql_set_word[20];
-	char sql_set_value[20];
-
-	static char sql_word[30] = "UPDATE ";
-
+	//应该不需要检测column和value的数量是否对应，sqlite3底层可以识别的
 	strcpy(sql_tablename, tablename);
 	strcat(sql_word, sql_tablename);
-	strcat(sql_word, " SET ");
+	strcat(sql_word, " ");
 
-	strcpy(sql_set_word, set_word);
-	strcat(sql_word, sql_set_word);
-	strcat(sql_word, " = ");
+	//将column和value进行组合，拼接到set中
+	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
+		char t_column[CHAR_MAX] = "";
+		char t_value[CHAR_MAX] = "";
+		char t_set[CHAR_MAX] = "";
 
-	strcpy(sql_set_value, set_value);
-	strcat(sql_word, sql_set_value);
-	
-	strcat(sql_word, " WHERE ");
+		strcpy(t_column, this->columns_vec[i]);
+		strcpy(t_value, this->values_vec[i]);
+		strcat(t_set, t_column);
+		strcat(t_set, "=");
+		strcat(t_set, t_value);
 
-	strcpy(sql_where_column, where_column);
-	strcat(sql_word, sql_where_column);
-	strcat(sql_word, " = ");
+		if (i != this->columns_vec.size() - 1) {
+			strcat(t_set, ",");
+		}
 
-	strcpy(sql_where_value, where_value);
-	strcat(sql_word, sql_where_value);
+		strcat(sql_set, t_set);
+	}
+	strcat(sql_set, " ");
+
+	//where条件
+	if (this->where_vec.size() == 1) {
+		strcat(sql_where, "WHERE ");
+		strcat(sql_where, this->where_vec[0]);
+	}
+
+	//and
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		char t_and[CHAR_MAX] = "";
+		char t_where[CHAR_MAX] = "";
+
+		strcat(t_where, " AND ");
+		strcpy(t_and, this->and_vec[i]);
+		strcat(t_where, t_and);
+		strcat(sql_and, t_where);
+	}
+
+
+	//or
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		char t_or[CHAR_MAX] = "";
+		char t_where[CHAR_MAX] = "";
+
+		strcat(t_where, " OR ");
+		strcpy(t_or, this->or_vec[i]);
+		strcat(t_where, t_or);
+		strcat(sql_or, t_where);
+	}
+
+	strcat(sql_word, sql_set);
+	strcat(sql_word, sql_where);
+	strcat(sql_word, sql_and);
+	strcat(sql_word, sql_or);
 	strcat(sql_word, ";");
 
-	char* sql = &sql_word[0];
-	std::cout << "the sql words is: " << sql << std::endl;
+	std::cout << "uodate(wheres) words is: " << sql_word << std::endl;
 
-	char* errmsg = NULL;
-	int rec = sqlite3_exec(this->db, sql, NULL, NULL, NULL);
+	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
+	//char* p_chr = &(chr[0]);	这一步其实是不需要的
+	int rec = sqlite3_exec(this->db, sql_word, NULL, NULL, NULL);
 
 	if (rec != SQLITE_OK) {
 		std::cout << "update data fail, errorcode is: " << rec << std::endl;
+		this->initVec();
 		return rec;
 	}
 
-	return SQLITE_OK;
-
-}
-
-
-
-int sqlfunc::deleteData(const char* tablename, const char* where_column, const char* where_value) {
-
-	DELETE FROM COMPANY WHERE ID = 7;
-	char sql_tablename[20];
-	char sql_where_column[20];
-	char sql_where_value[20];
-
-	static char sql_word[30] = "DELETE FROM ";
-
-	strcpy(sql_tablename, tablename);
-	strcat(sql_word, sql_tablename);
-	strcat(sql_word, " WHERE ");
-
-	strcpy(sql_where_column, where_column);
-	strcat(sql_word, sql_where_column);
-	strcat(sql_word, " = ");
-
-	strcpy(sql_where_value, where_value);
-	strcat(sql_word, sql_where_value);
-	strcat(sql_word, ";");
-
-	char* sql = &sql_word[0];
-	std::cout << "the sql words is: " << sql << std::endl;
-
-	char* errmsg = NULL;
-	int rec = sqlite3_exec(this->db, sql, NULL, NULL, NULL);
-
-	if (rec != SQLITE_OK) {
-		std::cout << "delete data fail, errorcode is: " << rec << std::endl;
-		return rec;
-	}
+	this->initVec();
 
 	return SQLITE_OK;
 
 }
-
-
-
-int sqlfunc::callback(void* func, int values_num, char** values, char** columns_name) {
-	std::cout << "callback is running" << std::endl;
-	for (int i = 0; i < values_num; i++) {
-		std::cout << "***the " << columns_name[i] << " 's value is: " << values[i] << std::endl;
-	}
-
-	return SQLITE_OK;
-}
-*/
-
-//int sqlfunc::findData(const char* tablename, const char* where_column) {
-//
-//	//SELECT ID FROM COMPANY
-//	char sql_tablename[20];
-//	char sql_where_column[20];
-//	char sql_where_value[20];
-//
-//	static char sql_word[30] = "SELECT ";
-//
-//	strcpy(sql_where_column, where_column);
-//	strcat(sql_word, sql_where_column);
-//	strcat(sql_word, " FROM ");
-//
-//	strcpy(sql_tablename, tablename);
-//	strcat(sql_word, sql_tablename);
-//
-//	char* sql = &sql_word[0];
-//	std::cout << "the sql words is: " << sql << std::endl;
-//
-//	int rec = sqlite3_exec(this->db, sql, NULL, NULL, NULL);
-//
-//	if (rec != SQLITE_OK) {
-//		std::cout << "find data fail, errorcode is: " << rec << std::endl;
-//		return rec;
-//	}
-//
-//	return SQLITE_OK;
-//}
-
