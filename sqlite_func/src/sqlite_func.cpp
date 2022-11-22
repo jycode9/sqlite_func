@@ -7,22 +7,26 @@ void functest() {
 
     //做成单例之后，使用宏定义将column、value进行简化
     //my_sql.insertData("USER", my_sql.Columns("ID", "NAME"), my_sql.Values("4", "'WENJY4'"));
-    //my_sql.insertData("USER2", my_sql.Values("3", "'NAME_3'", "1"));
+    //my_sql.insertData("USER2", my_sql.Values("1", "'NAME_1'", "10"));
 
     //my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'LILI'"));
     //my_sql.updateData("USER", my_sql.Columns("ID"), my_sql.Values("10"), my_sql.Where("NAME=='WENJY'"));
-    my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'LILI'"), my_sql.Where("NAME=='Sam1'"), my_sql.And("ID>=2", "AGE>=10"));
+    //my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'Sam'"), my_sql.Where("NAME=='LILI'"), my_sql.And("ID>=2", "AGE>=10"));
 
-    //my_sql.deleteData("USER", "NAME", "'Jam'");
+    //my_sql.deleteData("USER");
+    //my_sql.deleteData("USER2", my_sql.Where("AGE==10"), my_sql.And("ID>5"), my_sql.And("NAME=='NAME_6'"));
 
-    //newchar是一个指针变量。它指向了内存中“NAMETEST”这个常量的地址。
-    //当我们要修改newchar的值的时候，是无法直接修改NAMETEST的，这个数据已经固定
+    std::vector<std::map<char*, char*>> my_data;
+    my_sql.selectData("USER2", my_data);
 
+    for (int i = 0; i < my_data.size(); i++) {
+        for (auto iter = my_data[i].begin(); iter != my_data[i].end(); iter++) {
+            std::cout << "the column, value is: " << iter->first << ", " << iter->second << std::endl;
+            std::cout << "***************" << std::endl;
+        }
+        
 
-    //strcat的原理应该是进行数组类型的拼接，相当于，在原来的字符后面pushback东西。
-    //但是newchar本身的值和NAMETEST绑定了，强行修改会造成错误的。
-    //想要修改，可以这样
-    //strcat(newchar, " LLLL");
+    }
 
 
 
