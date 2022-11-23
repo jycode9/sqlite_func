@@ -6,13 +6,20 @@
 
 //sqlite3的封装函数
 //因为使用了模板函数，所以函数的声明和实现都在头文件中
-namespace myselect {
+namespace SelectData {
 	int select_data_num;
 	std::vector<std::vector<char*>> select_columns;
 	std::vector<std::vector<char*>> select_values;
+
+	//初始化数据
+	void initSelectData() {
+		select_columns.clear();
+		select_values.clear();
+		select_data_num = 0;
+	}
 }
 
-using namespace myselect;
+using namespace SelectData;
 
 //首先要做一个单例
 class sqlfunc {
@@ -759,19 +766,17 @@ int sqlfunc::callback(void* callfunc, int column_num, char** values, char** colu
 		//std::cout << "the columns,values is: " << columns[i] <<", "<<values[i] << std::endl;
 	}
 
-	select_columns.push_back(t_column_vec);
-	select_values.push_back(t_value_vec);	
+	SelectData::select_columns.push_back(t_column_vec);
+	SelectData::select_values.push_back(t_value_vec);
 	
-	select_data_num++;
+	SelectData::select_data_num++;
 
 	return SQLITE_OK;
 }
 
 
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>> &calldatas) {
-	select_columns.clear();
-	select_values.clear();
-	select_data_num = 0;
+	SelectData::initSelectData();
 
 	//SELECT * FROM COMPANY;
 	char sql_tablename[CHAR_MAX] = "";
@@ -800,9 +805,9 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	for (int i = 0; i < select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 
-		for (int j = 0; j < select_columns[i].size(); j++) {
-			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
-			t_calldata[select_columns[i][j]] = select_values[i][j];
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
 		}
 
 		calldatas.push_back(t_calldata);
@@ -818,9 +823,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 }
 
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where) {
-	select_columns.clear();
-	select_values.clear();
-	select_data_num = 0;
+	SelectData::initSelectData();
 
 	//where只能小于等于1
 	if (this->where_vec.size() != 1) {
@@ -866,9 +869,9 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	for (int i = 0; i < select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 
-		for (int j = 0; j < select_columns[i].size(); j++) {
-			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
-			t_calldata[select_columns[i][j]] = select_values[i][j];
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
 		}
 
 		calldatas.push_back(t_calldata);
@@ -886,9 +889,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 template<typename T, typename ...Args>
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas,
 	void* where, T condition, Args ...conditions) {
-	select_columns.clear();
-	select_values.clear();
-	select_data_num = 0;
+	SelectData::initSelectData();
 
 	//where只能小于等于1
 	if (this->where_vec.size() != 1) {
@@ -960,9 +961,9 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	for (int i = 0; i < select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 
-		for (int j = 0; j < select_columns[i].size(); j++) {
-			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
-			t_calldata[select_columns[i][j]] = select_values[i][j];
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
 		}
 
 		calldatas.push_back(t_calldata);
@@ -977,9 +978,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 }
 
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas) {
-	select_columns.clear();
-	select_values.clear();
-	select_data_num = 0;
+	SelectData::initSelectData();
 
 	//SELECT NAME,ID FROM USER2;
 	char sql_tablename[CHAR_MAX] = "";
@@ -1023,9 +1022,9 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 	for (int i = 0; i < select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 
-		for (int j = 0; j < select_columns[i].size(); j++) {
-			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
-			t_calldata[select_columns[i][j]] = select_values[i][j];
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
 		}
 
 		calldatas.push_back(t_calldata);
@@ -1041,9 +1040,7 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 }
 
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where) {
-	select_columns.clear();
-	select_values.clear();
-	select_data_num = 0;
+	SelectData::initSelectData();
 
 
 
