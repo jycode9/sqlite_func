@@ -17,17 +17,28 @@ void functest() {
     //my_sql.deleteData("USER2", my_sql.Where("AGE==10"), my_sql.And("ID>5"), my_sql.And("NAME=='NAME_6'"));
 
     std::vector<std::map<char*, char*>> my_data;
-    my_sql.selectData("USER2", my_data);
+    //my_sql.selectData("USER2", my_data);
+    //my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"), my_sql.And("ID>0"));
+    my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data);
 
     for (int i = 0; i < my_data.size(); i++) {
         for (auto iter = my_data[i].begin(); iter != my_data[i].end(); iter++) {
             std::cout << "the column, value is: " << iter->first << ", " << iter->second << std::endl;
-            std::cout << "***************" << std::endl;
         }
-        
+        std::cout << "***************" << std::endl;
 
     }
 
+    my_data.clear();
+    std::cout << "0000000000000000" << std::endl;
+    my_sql.selectData("USER2", my_data);
+    for (int i = 0; i < my_data.size(); i++) {
+        for (auto iter = my_data[i].begin(); iter != my_data[i].end(); iter++) {
+            std::cout << "the column, value is: " << iter->first << ", " << iter->second << std::endl;
+        }
+        std::cout << "***************" << std::endl;
+
+    }
 
 
 }

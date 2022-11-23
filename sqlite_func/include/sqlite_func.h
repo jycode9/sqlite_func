@@ -6,13 +6,13 @@
 
 //sqlite3的封装函数
 //因为使用了模板函数，所以函数的声明和实现都在头文件中
+namespace myselect {
+	int select_data_num;
+	std::vector<std::vector<char*>> select_columns;
+	std::vector<std::vector<char*>> select_values;
+}
 
-
-
-static int select_data_num;
-static std::vector<std::vector<char*>> select_columns;
-static std::vector<std::vector<char*>> select_values;
-
+using namespace myselect;
 
 //首先要做一个单例
 class sqlfunc {
@@ -87,15 +87,18 @@ public:
 	template<typename T, typename ...Args>
 	int deleteData(const char* tablename, void* where, T condition, Args ...conditions);
 
+
 	//回调函数
 	static int callback(void* callfunc, int column_num, char** values, char** columns);
+
 	//查找：全部查找
 	int selectData(const char* tablename, std::vector<std::map<char*, char*>> &calldatas);
 	//查找：where索引全部查找
 	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where);
 	//查找：and、or索引全部查找
 	template<typename T, typename ...Args>
-	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where, T condition, Args ...conditions);
+	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, 
+		void* where, T condition, Args ...conditions);
 
 	///查找：获取指定表头
 	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas);
@@ -103,7 +106,8 @@ public:
 	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where);
 	//查找：and、or索引全部查找
 	template<typename T, typename ...Args>
-	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where, T condition, Args ...conditions);
+	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, 
+		void* where, T condition, Args ...conditions);
 
 
 };
@@ -160,16 +164,14 @@ int sqlfunc::closeSQL() {
 }
 
 
-
-
 template<typename T>
 void* sqlfunc::Values(T value) {
 
 	this->values_vec.push_back((char*)value);
 
-	for (unsigned int i = 0; i < this->values_vec.size(); i++) {
-		std::cout << "the vec value is: " << this->values_vec[i] << std::endl;
-	}
+	//for (unsigned int i = 0; i < this->values_vec.size(); i++) {
+	//	std::cout << "the vec value is: " << this->values_vec[i] << std::endl;
+	//}
 	return SQLITE_OK;
 }
 
@@ -185,16 +187,14 @@ void* sqlfunc::Values(T value, Args ...values) {
 }
 
 
-
-
 template<typename T>
 void* sqlfunc::Columns(T column) {
 
 	this->columns_vec.push_back((char*)column);
 
-	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
-		std::cout << "the vec column is: " << this->columns_vec[i] << std::endl;
-	}
+	//for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
+	//	std::cout << "the vec column is: " << this->columns_vec[i] << std::endl;
+	//}
 	return SQLITE_OK;
 }
 
@@ -208,24 +208,22 @@ void* sqlfunc::Columns(T column, Args ...columns) {
 }
 
 
-
 void* sqlfunc::Where(char* condition) {
 
 	this->where_vec.push_back(condition);
-	std::cout << "the vec where is: " << this->where_vec[0] << std::endl;
+	//std::cout << "the vec where is: " << this->where_vec[0] << std::endl;
 
 	return SQLITE_OK;
 }
-
 
 
 template<typename T>
 void* sqlfunc::And(T condition) {
 	this->and_vec.push_back((char*)condition);
 
-	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
-		std::cout << "the vec and is: " << this->and_vec[i] << std::endl;
-	}
+	//for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+	//	std::cout << "the vec and is: " << this->and_vec[i] << std::endl;
+	//}
 	return SQLITE_OK;
 }
 
@@ -238,14 +236,13 @@ void* sqlfunc::And(T condition, Args ...conditions) {
 }
 
 
-
 template<typename T>
 void* sqlfunc::Or(T condition) {
 	this->or_vec.push_back((char*)condition);
 
-	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
-		std::cout << "the vec or is: " << this->or_vec[i] << std::endl;
-	}
+	//for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+	//	std::cout << "the vec or is: " << this->or_vec[i] << std::endl;
+	//}
 	return SQLITE_OK;
 }
 
@@ -256,7 +253,6 @@ void* sqlfunc::Or(T condition, Args ...conditions) {
 
 	return SQLITE_OK;
 }
-
 
 
 int sqlfunc::insertData(const char* tablename, void* columns, void* values) {
@@ -306,7 +302,7 @@ int sqlfunc::insertData(const char* tablename, void* columns, void* values) {
 
 	strcat(sql_word, sql_columns);
 	strcat(sql_word, sql_values);
-	std::cout << "insert(column) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -348,7 +344,7 @@ int sqlfunc::insertData(const char* tablename, void* values) {
 	strcat(sql_values, ");");
 
 	strcat(sql_word, sql_values);
-	std::cout << "insert(no columns) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -363,7 +359,6 @@ int sqlfunc::insertData(const char* tablename, void* values) {
 
 	return SQLITE_OK;
 }
-
 
 
 int sqlfunc::updateData(const char* tablename, void* columns, void* values) {
@@ -408,7 +403,7 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values) {
 	strcat(sql_word, sql_set);
 	strcat(sql_word, ";");
 
-	std::cout << "update(no where) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -486,7 +481,7 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, void
 	strcat(sql_word, sql_where);
 	strcat(sql_word, ";");
 
-	std::cout << "update(1 where) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -590,7 +585,7 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, void
 	strcat(sql_word, sql_or);
 	strcat(sql_word, ";");
 
-	std::cout << "uodate(wheres) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	//char[]和char*的界限很模糊。char*就是地址，是char的首地址。char刚好就是。所以不需要再转的
 	//char* p_chr = &(chr[0]);	这一步其实是不需要的
@@ -609,7 +604,6 @@ int sqlfunc::updateData(const char* tablename, void* columns, void* values, void
 }
 
 
-
 int sqlfunc::deleteData(const char* tablename) {
 	//DELETE FROM COMPANY;
 	char sql_tablename[CHAR_MAX] = "";
@@ -619,7 +613,7 @@ int sqlfunc::deleteData(const char* tablename) {
 	strcat(sql_word, sql_tablename);
 	strcat(sql_word, ";");
 
-	std::cout << "delete(no where) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	int rec = sqlite3_exec(this->db, sql_word, NULL, NULL, NULL);
 
@@ -660,7 +654,7 @@ int sqlfunc::deleteData(const char* tablename, void* where) {
 	strcat(sql_word, sql_where);
 	strcat(sql_word, ";");
 
-	std::cout << "delete(1 where) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	int rec = sqlite3_exec(this->db, sql_word, NULL, NULL, NULL);
 
@@ -730,7 +724,7 @@ int sqlfunc::deleteData(const char* tablename, void* where, T condition, Args ..
 	strcat(sql_word, sql_or);
 	strcat(sql_word, ";");
 
-	std::cout << "delete(wheres) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	int rec = sqlite3_exec(this->db, sql_word, NULL, NULL, NULL);
 
@@ -744,6 +738,7 @@ int sqlfunc::deleteData(const char* tablename, void* where, T condition, Args ..
 
 	return SQLITE_OK;
 }
+
 
 int sqlfunc::callback(void* callfunc, int column_num, char** values, char** columns) {
 
@@ -766,13 +761,18 @@ int sqlfunc::callback(void* callfunc, int column_num, char** values, char** colu
 
 	select_columns.push_back(t_column_vec);
 	select_values.push_back(t_value_vec);	
-
+	
 	select_data_num++;
 
 	return SQLITE_OK;
 }
 
+
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>> &calldatas) {
+	select_columns.clear();
+	select_values.clear();
+	select_data_num = 0;
+
 	//SELECT * FROM COMPANY;
 	char sql_tablename[CHAR_MAX] = "";
 	char sql_word[CHAR_MAX] = "SELECT * FROM ";
@@ -781,7 +781,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	strcat(sql_word, sql_tablename);
 	strcat(sql_word, ";");
 
-	std::cout << "select(no where) words is: " << sql_word << std::endl;
+	std::cout << "sql words is: " << sql_word << std::endl;
 
 	int rec = sqlite3_exec(this->db, sql_word, &this->callback, NULL, NULL);
 
@@ -816,5 +816,242 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	return SQLITE_OK;
 
 }
+
+int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where) {
+	select_columns.clear();
+	select_values.clear();
+	select_data_num = 0;
+
+	//where只能小于等于1
+	if (this->where_vec.size() != 1) {
+		this->initWordsVec();
+		return SQLITE_ERROR;
+	}
+
+	//SELECT * FROM COMPANY WHERE NAME='Sam';
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_where[CHAR_MAX] = "";
+
+	char sql_word[CHAR_MAX] = "SELECT * FROM ";
+
+	strcpy(sql_tablename, tablename);
+	strcat(sql_word, sql_tablename);
+	strcat(sql_word, " ");
+
+	//where条件
+	if (this->where_vec.size() == 1) {
+		strcat(sql_where, "WHERE ");
+		strcat(sql_where, this->where_vec[0]);
+	}
+
+	strcat(sql_word, sql_where);
+	strcat(sql_word, ";");
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+
+	int rec = sqlite3_exec(this->db, sql_word, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		//std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	//std::cout << "the data vec num is: " << select_data_num << std::endl;
+	//std::cout << "***************" << std::endl;
+
+	//std::vector<std::map<char*, char*>> calldatas
+
+
+	for (int i = 0; i < select_data_num; i++) {
+		std::map<char*, char*> t_calldata;
+
+		for (int j = 0; j < select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
+			t_calldata[select_columns[i][j]] = select_values[i][j];
+		}
+
+		calldatas.push_back(t_calldata);
+
+		//std::cout << "***************" << std::endl;
+
+	}
+
+
+	this->initWordsVec();
+	return SQLITE_OK;
+
+}
+
+template<typename T, typename ...Args>
+int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas,
+	void* where, T condition, Args ...conditions) {
+	select_columns.clear();
+	select_values.clear();
+	select_data_num = 0;
+
+	//where只能小于等于1
+	if (this->where_vec.size() != 1) {
+		this->initWordsVec();
+		return SQLITE_ERROR;
+	}
+
+	//SELECT * FROM COMPANY WHERE NAME='Sam';
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_where[CHAR_MAX] = "";
+	char sql_and[CHAR_MAX] = "";
+	char sql_or[CHAR_MAX] = "";
+
+	char sql_word[CHAR_MAX] = "SELECT * FROM ";
+
+	strcpy(sql_tablename, tablename);
+	strcat(sql_word, sql_tablename);
+	strcat(sql_word, " ");
+
+	//where条件
+	if (this->where_vec.size() == 1) {
+		strcat(sql_where, "WHERE ");
+		strcat(sql_where, this->where_vec[0]);
+	}
+
+	//and
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		char t_and[CHAR_MAX] = "";
+		char t_where[CHAR_MAX] = "";
+
+		strcat(t_where, " AND ");
+		strcpy(t_and, this->and_vec[i]);
+		strcat(t_where, t_and);
+		strcat(sql_and, t_where);
+	}
+
+	//or
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		char t_or[CHAR_MAX] = "";
+		char t_where[CHAR_MAX] = "";
+
+		strcat(t_where, " OR ");
+		strcpy(t_or, this->or_vec[i]);
+		strcat(t_where, t_or);
+		strcat(sql_or, t_where);
+	}
+
+	strcat(sql_word, sql_where);
+	strcat(sql_word, sql_and);
+	strcat(sql_word, sql_or);
+	strcat(sql_word, ";");
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+
+	int rec = sqlite3_exec(this->db, sql_word, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		//std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	//std::cout << "the data vec num is: " << select_data_num << std::endl;
+	//std::cout << "***************" << std::endl;
+
+	//std::vector<std::map<char*, char*>> calldatas
+
+
+	for (int i = 0; i < select_data_num; i++) {
+		std::map<char*, char*> t_calldata;
+
+		for (int j = 0; j < select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
+			t_calldata[select_columns[i][j]] = select_values[i][j];
+		}
+
+		calldatas.push_back(t_calldata);
+
+		//std::cout << "***************" << std::endl;
+
+	}
+
+	this->initWordsVec();
+	return SQLITE_OK;
+
+}
+
+int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas) {
+	select_columns.clear();
+	select_values.clear();
+	select_data_num = 0;
+
+	//SELECT NAME,ID FROM USER2;
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_word[CHAR_MAX] = "SELECT ";
+
+	//columns
+	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
+		char t_column[CHAR_MAX] = "";
+
+		strcpy(t_column, this->columns_vec[i]);
+
+		strcat(sql_word, t_column);
+
+		if (i != this->columns_vec.size() - 1) {
+			strcat(sql_word, ",");
+		}
+
+	}
+
+	strcat(sql_word, " FROM ");
+	strcpy(sql_tablename, tablename);
+	strcat(sql_word, sql_tablename);
+	strcat(sql_word, ";");
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+
+	int rec = sqlite3_exec(this->db, sql_word, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		//std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	//std::cout << "the data vec num is: " << select_data_num << std::endl;
+	//std::cout << "***************" << std::endl;
+
+	//std::vector<std::map<char*, char*>> calldatas
+
+
+	for (int i = 0; i < select_data_num; i++) {
+		std::map<char*, char*> t_calldata;
+
+		for (int j = 0; j < select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << select_columns[i][j] << ", " << select_values[i][j] << std::endl;
+			t_calldata[select_columns[i][j]] = select_values[i][j];
+		}
+
+		calldatas.push_back(t_calldata);
+
+		//std::cout << "***************" << std::endl;
+
+	}
+
+
+	this->initWordsVec();
+	return SQLITE_OK;
+
+}
+
+int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where) {
+	select_columns.clear();
+	select_values.clear();
+	select_data_num = 0;
+
+
+
+
+	return SQLITE_OK;
+
+}
+
+
 
 
