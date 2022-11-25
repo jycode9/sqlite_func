@@ -10,9 +10,33 @@ namespace SelectData {
 	int select_data_num;
 	std::vector<std::vector<char*>> select_columns;
 	std::vector<std::vector<char*>> select_values;
-
+	
 	//初始化数据
+	//将内容删除，并使用迭代器将char*delete掉
 	void initSelectData() {
+
+		//外部vec，有几条数据
+		for (int i = 0; i < select_columns.size(); i++) {
+			//内部vec，有几列column
+			std::cout << "**time is: "<< i << std::endl;
+			//iter里存放的就是char*数据了
+			for (auto iter = select_columns[i].begin(); iter!= select_columns[i].end(); iter++) {
+				std::cout << "1" << std::endl;
+				std::cout << *iter << std::endl;
+				char* pt = (char*)*iter;
+				delete pt;
+				std::cout << "2" << std::endl;
+				//在前面使用strcpy拷贝内存的时候，内存大小+1
+				//if (iter != select_columns[i].begin()) {
+				//	iter--;
+				//}
+			}
+
+		}
+
+
+
+		//容器的clear不能够删除内部new的char*，需要单独去释放
 		select_columns.clear();
 		select_values.clear();
 		select_data_num = 0;
@@ -99,12 +123,12 @@ public:
 	static int callback(void* callfunc, int column_num, char** values, char** columns);
 
 	//查找：全部查找
-	int selectData(const char* tablename, std::vector<std::map<char*, char*>> &calldatas);
+	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas);
 	//查找：where索引全部查找
 	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where);
 	//查找：and、or索引全部查找
 	template<typename T, typename ...Args>
-	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, 
+	int selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas,
 		void* where, T condition, Args ...conditions);
 
 	///查找：获取指定表头
@@ -113,7 +137,7 @@ public:
 	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where);
 	//查找：and、or索引全部查找
 	template<typename T, typename ...Args>
-	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, 
+	int selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas,
 		void* where, T condition, Args ...conditions);
 
 
@@ -751,32 +775,47 @@ int sqlfunc::callback(void* callfunc, int column_num, char** values, char** colu
 
 	std::vector<char*> t_column_vec;
 	std::vector<char*> t_value_vec;
-	
+
 	for (int i = 0; i < column_num; i++) {
+
+
 		//0是id，1是name， 2是age
 		//必须用指针变量来转存，callback回调时候会释放数据
-		char* new_value = new char;
-		char* new_column = new char;
 
-		strcpy(new_column, columns[i]);
-		strcpy(new_value, values[i]);
+	
+		int value_size = sizeof(values[i]);
+		int column_size = sizeof(columns[i]);
+
+
+		char* new_value = (char*)malloc(sizeof(char) * value_size); 
+		char* new_column = (char*)malloc(sizeof(char) * column_size);
+
+		//防止当前指针为空
+		if (new_value != NULL) {
+			memset(new_value, 0, column_size);
+			strcpy(new_value, values[i]);
+		}
+		if (new_column != NULL) {
+			memset(new_column, 0, value_size);
+			strcpy(new_column, columns[i]);
+		}
 
 		t_column_vec.push_back(new_column);
 		t_value_vec.push_back(new_value);
-		//std::cout << "the columns,values is: " << columns[i] <<", "<<values[i] << std::endl;
+
 	}
 
 	SelectData::select_columns.push_back(t_column_vec);
 	SelectData::select_values.push_back(t_value_vec);
-	
+
 	SelectData::select_data_num++;
 
 	return SQLITE_OK;
 }
 
 
-int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>> &calldatas) {
-	SelectData::initSelectData();
+int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas) {
+	
 
 	//SELECT * FROM COMPANY;
 	char sql_tablename[CHAR_MAX] = "";
@@ -800,7 +839,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	//std::cout << "***************" << std::endl;
 
 	//std::vector<std::map<char*, char*>> calldatas
-	
+
 
 	for (int i = 0; i < select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
@@ -818,12 +857,14 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 
 
 	this->initWordsVec();
+	SelectData::initSelectData();
+
 	return SQLITE_OK;
 
 }
 
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where) {
-	SelectData::initSelectData();
+	
 
 	//where只能小于等于1
 	if (this->where_vec.size() != 1) {
@@ -882,6 +923,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 
 
 	this->initWordsVec();
+	SelectData::initSelectData();
 	return SQLITE_OK;
 
 }
@@ -889,7 +931,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 template<typename T, typename ...Args>
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas,
 	void* where, T condition, Args ...conditions) {
-	SelectData::initSelectData();
+	
 
 	//where只能小于等于1
 	if (this->where_vec.size() != 1) {
@@ -973,12 +1015,13 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	}
 
 	this->initWordsVec();
+	SelectData::initSelectData();
 	return SQLITE_OK;
 
 }
 
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas) {
-	SelectData::initSelectData();
+	
 
 	//SELECT NAME,ID FROM USER2;
 	char sql_tablename[CHAR_MAX] = "";
@@ -1035,16 +1078,17 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 
 
 	this->initWordsVec();
+	SelectData::initSelectData();
 	return SQLITE_OK;
 
 }
 
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where) {
+	
+
+
+
 	SelectData::initSelectData();
-
-
-
-
 	return SQLITE_OK;
 
 }
