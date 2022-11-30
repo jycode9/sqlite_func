@@ -106,13 +106,27 @@ public:
 
 
 
-	//使用结构体的函数
+	//使用map做指引的智能函数
 public:
-	//插入，按照结构体
+	//插入，按照map
+	//map第一个元素为主键
 	int insertData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
 
-	//更新，按照结构体
+	//更新，按照map
+	//map第一个元素为主键
 	int updateData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
+
+	//查找，按照vec<map>
+	//指定有内容的map主键作为where、and，当查找多个数据时分别插入vec中
+	//将map的数据设空，则自动返回全部
+	int selectData_v2(const std::string& tablename, std::vector<std::unordered_map<std::string, std::string>>& values);
+
+	//删除，按照map
+	//指定有内容的map主键作为where、add
+	int deleteData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
+
+	//删除，全部
+	int deleteData_v2(const std::string& tablename);
 
 };
 
@@ -439,7 +453,7 @@ int sqlfunc::updateData(const std::string& tablename, void* columns, void* value
 
 
 
-//插入，使用map智能插入
+//插入，按照map
 int sqlfunc::insertData_v2(const std::string & tablename, std::unordered_map<std::string, std::string>& values) {
 	
 	std::vector<std::string> t_columns;
@@ -468,7 +482,7 @@ int sqlfunc::insertData_v2(const std::string & tablename, std::unordered_map<std
 }
 
 
-//更新，按照结构体
+//更新，按照map
 int sqlfunc::updateData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values) {
 
 	std::vector<std::string> t_columns;

@@ -70,7 +70,7 @@ void functest() {
 
 	//my_sql.updateData("USER2", my_sql.Columns("AGE","NAME"), my_sql.Values(23,"Sam"), my_sql.Where("ID=19"));
 	//注意map的0项必须为该数据的主键，它将作为update的索引
-	my_sql.updateData_v2("USER2", map_user2);
+	//my_sql.updateData_v2("USER2", map_user2);
 
 }
 
