@@ -1073,7 +1073,68 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 }
 
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where) {
-	
+
+	SelectData::initSelectData();
+
+	//where只能小于等于1
+	if (this->where_vec.size() != 1) {
+		this->initWordsVec();
+		return SQLITE_ERROR;
+	}
+
+	//SELECT NAME,ID FROM USER2 WHERE ID>2;
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_word[CHAR_MAX] = "SELECT ";
+	char sql_where[CHAR_MAX] = "";
+
+	//columns
+	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
+		char t_column[CHAR_MAX] = "";
+
+		strcpy(t_column, this->columns_vec[i]);
+
+		strcat(sql_word, t_column);
+
+		if (i != this->columns_vec.size() - 1) {
+			strcat(sql_word, ",");
+		}
+
+	}
+
+	strcat(sql_word, " FROM ");
+	strcpy(sql_tablename, tablename);
+	strcat(sql_word, sql_tablename);
+	strcat(sql_word, " ");
+
+
+	//where
+	if (this->where_vec.size() == 1) {
+		strcat(sql_where, "WHERE ");
+		strcat(sql_where, this->where_vec[0]);
+	}
+	strcat(sql_word, sql_where);
+	strcat(sql_word, ";");
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+
+	int rec = sqlite3_exec(this->db, sql_word, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		//std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	for (int i = 0; i < select_data_num; i++) {
+		std::map<char*, char*> t_calldata;
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
+		}
+		calldatas.push_back(t_calldata);
+	}
+
+	this->initWordsVec();
 
 	return SQLITE_OK;
 
@@ -1081,4 +1142,104 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 
 
 
+template<typename T, typename ...Args>
+int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas,
+	void* where, T condition, Args ...conditions) {
+
+
+	SelectData::initSelectData();
+
+	//where只能小于等于1
+	if (this->where_vec.size() != 1) {
+		this->initWordsVec();
+		return SQLITE_ERROR;
+	}
+
+	//SELECT NAME,ID FROM USER2 WHERE ID>2 AND ID<4;
+	char sql_tablename[CHAR_MAX] = "";
+	char sql_word[CHAR_MAX] = "SELECT ";
+	char sql_where[CHAR_MAX] = "";
+	char sql_and[CHAR_MAX] = "";
+	char sql_or[CHAR_MAX] = "";
+
+	//columns
+	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
+		char t_column[CHAR_MAX] = "";
+
+		strcpy(t_column, this->columns_vec[i]);
+
+		strcat(sql_word, t_column);
+
+		if (i != this->columns_vec.size() - 1) {
+			strcat(sql_word, ",");
+		}
+
+	}
+
+	strcat(sql_word, " FROM ");
+	strcpy(sql_tablename, tablename);
+	strcat(sql_word, sql_tablename);
+	strcat(sql_word, " ");
+
+
+	//where
+	if (this->where_vec.size() == 1) {
+		strcat(sql_where, "WHERE ");
+		strcat(sql_where, this->where_vec[0]);
+	}
+
+	//and
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		char t_and[CHAR_MAX] = "";
+		char t_where[CHAR_MAX] = "";
+
+		strcat(t_where, " AND ");
+		strcpy(t_and, this->and_vec[i]);
+		strcat(t_where, t_and);
+		strcat(sql_and, t_where);
+	}
+
+	//or
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		char t_or[CHAR_MAX] = "";
+		char t_where[CHAR_MAX] = "";
+
+		strcat(t_where, " OR ");
+		strcpy(t_or, this->or_vec[i]);
+		strcat(t_where, t_or);
+		strcat(sql_or, t_where);
+	}
+
+	strcat(sql_word, sql_where);
+	strcat(sql_word, sql_and);
+	strcat(sql_word, sql_or);
+	strcat(sql_word, ";");
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+
+	int rec = sqlite3_exec(this->db, sql_word, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		//std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	for (int i = 0; i < select_data_num; i++) {
+		std::map<char*, char*> t_calldata;
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
+		}
+		calldatas.push_back(t_calldata);
+	}
+
+	this->initWordsVec();
+
+	return SQLITE_OK;
+
+
+
+
+}
 

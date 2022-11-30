@@ -20,7 +20,14 @@ void functest() {
 	//my_sql.selectData("USER2", my_data);
 	//my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"));
 	//my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"), my_sql.And("ID>0"));
+	 
+	//select指定表头
 	//my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data);
+	//my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data, my_sql.Where("ID>1"));
+	my_sql.selectData("USER2", my_sql.Columns("NAME", "AGE"), my_data, my_sql.Where("ID>1"), my_sql.And("ID<4"));
+
+
+
 
 	for (int i = 0; i < my_data.size(); i++) {
 		std::cout << "************" << std::endl;
