@@ -59,12 +59,6 @@ void functest() {
 	//}
 
 
-	std::vector<USER2> sqlcall;
-	USER2 t_user2;
-	t_user2.ID = 19;
-	t_user2.AGE = 19;
-	t_user2.NAME = "Wen19";
-
 	//因为struct无法拿到内容，可以用map
 	std::vector<std::map<std::string, std::string>> vec_user2;
 	std::map<std::string, std::string> map_user2;
