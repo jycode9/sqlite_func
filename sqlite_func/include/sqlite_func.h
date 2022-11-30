@@ -90,8 +90,6 @@ namespace SelectData {
 	}
 }
 
-using namespace SelectData;
-
 //首先要做一个单例
 class sqlfunc {
 
@@ -887,7 +885,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	//std::vector<std::map<char*, char*>> calldatas
 
 
-	for (int i = 0; i < select_data_num; i++) {
+	for (int i = 0; i < SelectData::select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 
 		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
@@ -954,7 +952,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	//std::vector<std::map<char*, char*>> calldatas
 
 
-	for (int i = 0; i < select_data_num; i++) {
+	for (int i = 0; i < SelectData::select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 
 		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
@@ -1105,7 +1103,7 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 		return rec;
 	}
 
-	for (int i = 0; i < select_data_num; i++) {
+	for (int i = 0; i < SelectData::select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
 			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
@@ -1173,7 +1171,7 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 		return rec;
 	}
 
-	for (int i = 0; i < select_data_num; i++) {
+	for (int i = 0; i < SelectData::select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
 			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
@@ -1273,7 +1271,7 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 		return rec;
 	}
 
-	for (int i = 0; i < select_data_num; i++) {
+	for (int i = 0; i < SelectData::select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
 		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
 			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
