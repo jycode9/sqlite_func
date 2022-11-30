@@ -38,7 +38,7 @@ void functest() {
 	
 
 
-	std::vector<std::map<std::string, std::string>> my_data;
+	std::vector<std::unordered_map<std::string, std::string>> my_data;
 	sqlfunc my_sql("../src/test.db");
 	
 	//测试从外部的值写入
@@ -60,14 +60,17 @@ void functest() {
 
 
 	//因为struct无法拿到内容，可以用map
-	std::vector<std::map<std::string, std::string>> vec_user2;
-	std::map<std::string, std::string> map_user2;
-	map_user2["ID"] = "19";
-	map_user2["AGE"] = "19";
-	map_user2["NAME"] = "Wen19";
+	std::vector<std::unordered_map<std::string, std::string>> vec_user2;
+	std::unordered_map<std::string, std::string> map_user2;
+	map_user2["ID"] = "20";
+	map_user2["AGE"] = "15";
+	map_user2["NAME"] = "Peter";
+	//注意map的column必须完整。insert会限制，并且无法插入相同的主键
+	//my_sql.insertData_v2("USER2", map_user2);
 
-	my_sql.insertData_v2("USER2", map_user2);
-
+	//my_sql.updateData("USER2", my_sql.Columns("AGE","NAME"), my_sql.Values(23,"Sam"), my_sql.Where("ID=19"));
+	//注意map的0项必须为该数据的主键，它将作为update的索引
+	my_sql.updateData_v2("USER2", map_user2);
 
 }
 

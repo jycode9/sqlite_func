@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <sstream>
 #include "../thirdparty/sqlite3.h"
 
@@ -95,15 +96,23 @@ public:
 
 	//插入，指定表头
 	int insertData(const std::string& tablename, void* columns, void* values);
-	//插入，默认排序
+	//插入，默认排序（v2中没有使用）
 	int insertData(const std::string& tablename, void* values);
 
-	
+	//更新，指定where
+	int updateData(const std::string& tablename, void* columns, void* values, void* where);
+
+	//查找，指定where，and，or
+
+
 
 	//使用结构体的函数
 public:
 	//插入，按照结构体
-	int insertData_v2(const std::string& tablename, std::map<std::string, std::string>& values);
+	int insertData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
+
+	//更新，按照结构体
+	int updateData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
 
 };
 
@@ -163,6 +172,124 @@ int sqlfunc::closeSQL() {
 
 	return SQLITE_OK;
 }
+
+
+//将任意类型转为string
+template <typename T>
+std::string sqlfunc::convertAnyToString(T data) {
+	std::stringstream strstream;
+	strstream.str("");
+	strstream << data;
+	return strstream.str();
+}
+
+template<typename T>
+void* sqlfunc::Values(T value) {
+
+	if (this->convertAnyToString(value) == "") {
+		std::cout << "value null" << std::endl;
+	}
+	else {
+		this->values_vec.push_back(this->convertAnyToString(value));
+	}
+
+
+	return SQLITE_OK;
+}
+
+template<typename T, typename ...Args>
+void* sqlfunc::Values(T value, Args ...values) {
+
+	if (this->convertAnyToString(value) == "") {
+		std::cout << "value null" << std::endl;
+	}
+	else {
+		this->values_vec.push_back(this->convertAnyToString(value));
+	}
+	this->Values(values...);
+
+	return SQLITE_OK;
+
+}
+
+
+template<typename T>
+void* sqlfunc::Columns(T column) {
+
+	if (this->convertAnyToString(column) == "") {
+		std::cout << "column null" << std::endl;
+	}
+	else {
+		this->columns_vec.push_back(this->convertAnyToString(column));
+	}
+
+
+	return SQLITE_OK;
+}
+
+template<typename T, typename ...Args>
+void* sqlfunc::Columns(T column, Args ...columns) {
+
+	if (this->convertAnyToString(column) == "") {
+		std::cout << "column null" << std::endl;
+	}
+	else {
+		this->columns_vec.push_back(this->convertAnyToString(column));
+	}
+
+	this->Columns(columns...);
+
+	return SQLITE_OK;
+}
+
+
+void* sqlfunc::Where(const std::string& condition) {
+
+	if (this->convertAnyToString(condition) == "") {
+		std::cout << "where null" << std::endl;
+	}
+	else {
+		this->where_vec.push_back(this->convertAnyToString(condition));
+	}
+	
+
+	return SQLITE_OK;
+}
+
+
+template<typename T>
+void* sqlfunc::And(T condition) {
+
+	this->and_vec.push_back(this->convertAnyToString(condition));
+
+	return SQLITE_OK;
+}
+
+template<typename T, typename ...Args>
+void* sqlfunc::And(T condition, Args ...conditions) {
+
+	this->and_vec.push_back(this->convertAnyToString(condition));
+	this->And(conditions...);
+
+	return SQLITE_OK;
+}
+
+
+template<typename T>
+void* sqlfunc::Or(T condition) {
+	this->or_vec.push_back(this->convertAnyToString(condition));
+
+	return SQLITE_OK;
+}
+
+template<typename T, typename ...Args>
+void* sqlfunc::Or(T condition, Args ...conditions) {
+	this->or_vec.push_back(this->convertAnyToString(condition));
+	this->Or(conditions...);
+
+	return SQLITE_OK;
+}
+
 
 //插入，指定表头
 int sqlfunc::insertData(const std::string& tablename, void* columns, void* values) {
@@ -255,9 +382,65 @@ int sqlfunc::insertData(const std::string& tablename, void* values) {
 
 
 
+//更新，指定where
+int sqlfunc::updateData(const std::string& tablename, void* columns, void* values, void* where) {
+	//UPDATE USER2 SET NAME='Sam',AGE=23 WHERE ID=6;
+
+	//检测columns_vec和values_vec的大小是否相等
+	if (this->columns_vec.size() != this->values_vec.size()) {
+		this->initWordsVec();
+		std::cout << "columns'num != values'num" << std::endl;
+		return SQLITE_ERROR;
+	}
+
+	//where只能等于1
+	if (this->where_vec.size() != 1) {
+		this->initWordsVec();
+		std::cout << "where's num != 1" << std::endl;
+		return SQLITE_ERROR;
+	}
+
+	std::string sql_tablename = tablename;
+	std::string sql_set = "SET ";
+	std::string sql_where = "WHERE ";
+	std::string sql_word = "UPDATE " + sql_tablename + " ";
+
+	//拼接set
+	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
+
+		std::string t_set = this->columns_vec[i] + "=" + "'" + this->values_vec[i] + "'";
+		if (i != this->columns_vec.size() - 1) {
+			t_set = t_set + ",";
+		}
+		sql_set = sql_set + t_set;
+	}
+	sql_set = sql_set + " ";
+
+	//where条件
+	sql_where = sql_where + this->where_vec[0];
+
+	sql_word = sql_word + sql_set + sql_where + ";";
+	std::cout << "sql words is: " << sql_word << std::endl;
+
+	char sql_word_c[CHAR_MAX] = "";
+	strcpy(sql_word_c, (char*)sql_word.c_str());
+	int rec = sqlite3_exec(this->db, sql_word_c, NULL, NULL, NULL);
+	if (rec != SQLITE_OK) {
+		std::cout << "update data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	//指令完成后进行初始化。在函数头不能进行，因为函数头已经将辅助语句函数执行完，会清空
+	this->initWordsVec();
+	return SQLITE_OK;
+}
+
+
+
 
 //插入，使用map智能插入
-int sqlfunc::insertData_v2(const std::string & tablename, std::map<std::string, std::string>& values) {
+int sqlfunc::insertData_v2(const std::string & tablename, std::unordered_map<std::string, std::string>& values) {
 	
 	std::vector<std::string> t_columns;
 	std::vector<std::string> t_values;
@@ -285,122 +468,46 @@ int sqlfunc::insertData_v2(const std::string & tablename, std::map<std::string, 
 }
 
 
+//更新，按照结构体
+int sqlfunc::updateData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values) {
 
+	std::vector<std::string> t_columns;
+	std::vector<std::string> t_values;
+	std::string t_where_column;
+	std::string t_where_value;
 
-
-
-//将任意类型转为string
-template <typename T>
-std::string sqlfunc::convertAnyToString(T data) {
-	std::stringstream strstream;
-	strstream.str("");
-	strstream << data;
-	return strstream.str();
-}
-
-
-
-
-
-
-
-template<typename T>
-void* sqlfunc::Values(T value) {
-
-	if (this->convertAnyToString(value) == "") {
-		std::cout << "value null" << std::endl;
+	//使用迭代器
+	for (auto iter = values.begin(); iter != values.end(); iter++) {
+		//跳过第一项（作为where）
+		if (iter == values.begin()) {
+			t_where_column = (*iter).first;
+			t_where_value = (*iter).second;
+			iter++;
+		}
+		//std::cout << (*iter).first << ": " << (*iter).second << std::endl;
+		t_columns.push_back((*iter).first);
+		t_values.push_back((*iter).second);
 	}
-	else {
-		this->values_vec.push_back(this->convertAnyToString(value));
+
+	//调用回调函数进行拼接
+	for (int i = 0; i < t_columns.size(); i++) {
+		this->Columns(t_columns[i]);
+		this->Values(t_values[i]);
 	}
-	
+	//where
+	std::string t_where = t_where_column + "=" + "'" + t_where_value + "'";
+	this->Where(t_where);
 
-	return SQLITE_OK;
-}
+	//调用原始函数
+	int rec = this->updateData(tablename, this->Columns(""), this->Values(""), this->Where(""));
 
-template<typename T, typename ...Args>
-void* sqlfunc::Values(T value, Args ...values) {
-
-	if (this->convertAnyToString(value) == "") {
-		std::cout << "value null" << std::endl;
+	if (rec != SQLITE_OK) {
+		return rec;
 	}
-	else {
-		this->values_vec.push_back(this->convertAnyToString(value));
-	}
-	this->Values(values...);
-
 	return SQLITE_OK;
+
 
 }
 
 
-template<typename T>
-void* sqlfunc::Columns(T column) {
 
-	if (this->convertAnyToString(column) == "") {
-		std::cout << "column null" << std::endl;
-	}
-	else {
-		this->columns_vec.push_back(this->convertAnyToString(column));
-	}
-	
-
-	return SQLITE_OK;
-}
-
-template<typename T, typename ...Args>
-void* sqlfunc::Columns(T column, Args ...columns) {
-
-	if (this->convertAnyToString(column) == "") {
-		std::cout << "column null" << std::endl;
-	}
-	else {
-		this->columns_vec.push_back(this->convertAnyToString(column));
-	}
-	
-	this->Columns(columns...);
-
-	return SQLITE_OK;
-}
-
-
-void* sqlfunc::Where(const std::string& condition) {
-
-	this->where_vec.push_back(this->convertAnyToString(condition));
-
-	return SQLITE_OK;
-}
-
-
-template<typename T>
-void* sqlfunc::And(T condition) {
-
-	this->and_vec.push_back(this->convertAnyToString(condition));
-
-	return SQLITE_OK;
-}
-
-template<typename T, typename ...Args>
-void* sqlfunc::And(T condition, Args ...conditions) {
-
-	this->and_vec.push_back(this->convertAnyToString(condition));
-	this->And(conditions...);
-
-	return SQLITE_OK;
-}
-
-
-template<typename T>
-void* sqlfunc::Or(T condition) {
-	this->or_vec.push_back(this->convertAnyToString(condition));
-
-	return SQLITE_OK;
-}
-
-template<typename T, typename ...Args>
-void* sqlfunc::Or(T condition, Args ...conditions) {
-	this->or_vec.push_back(this->convertAnyToString(condition));
-	this->Or(conditions...);
-
-	return SQLITE_OK;
-}
