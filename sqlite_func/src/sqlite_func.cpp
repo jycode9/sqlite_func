@@ -18,21 +18,19 @@ void functest() {
 
 	std::vector<std::map<char*, char*>> my_data;
 	//my_sql.selectData("USER2", my_data);
+	//my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"));
 	//my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"), my_sql.And("ID>0"));
 	//my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data);
 
-	//for (int i = 0; i < my_data.size(); i++) {
-	//	for (auto iter = my_data[i].begin(); iter != my_data[i].end(); iter++) {
-	//		std::cout << "the column, value is: " << iter->first << ", " << iter->second << std::endl;
-	//	}
-	//	std::cout << "***************" << std::endl;
+	for (int i = 0; i < my_data.size(); i++) {
+		std::cout << "************" << std::endl;
+		for (auto itr = my_data[i].begin(); itr != my_data[i].end(); itr++) {
+			std::cout << "==========" << std::endl;
+			std::cout << (*itr).first << std::endl;
+			std::cout << (*itr).second << std::endl;
+		}
+	}
 
-	//}
-
-	//my_data.clear();
-
-	my_sql.selectData("USER2", my_data);
-	my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data);
 
 
 }

@@ -13,28 +13,27 @@ namespace SelectData {
 	
 	//初始化数据
 	//将内容删除，并使用迭代器将char*delete掉
+	//这个是对指针的释放，每次函数调用前、析构时使用
 	void initSelectData() {
 
 		//外部vec，有几条数据
 		for (int i = 0; i < select_columns.size(); i++) {
 			//内部vec，有几列column
-			std::cout << "**time is: "<< i << std::endl;
 			//iter里存放的就是char*数据了
 			for (auto iter = select_columns[i].begin(); iter!= select_columns[i].end(); iter++) {
-				std::cout << "1" << std::endl;
-				std::cout << *iter << std::endl;
 				char* pt = (char*)*iter;
 				delete pt;
-				std::cout << "2" << std::endl;
-				//在前面使用strcpy拷贝内存的时候，内存大小+1
-				//if (iter != select_columns[i].begin()) {
-				//	iter--;
-				//}
 			}
-
 		}
 
-
+		for (int i = 0; i < select_values.size(); i++) {
+			//内部vec，有几列column
+			//iter里存放的就是char*数据了
+			for (auto iter = select_values[i].begin(); iter != select_values[i].end(); iter++) {
+				char* pt = (char*)*iter;
+				delete pt;
+			}
+		}
 
 		//容器的clear不能够删除内部new的char*，需要单独去释放
 		select_columns.clear();
@@ -166,6 +165,8 @@ sqlfunc::~sqlfunc() {
 	//析构时候要删除指针
 	this->columns_vec.clear();
 	this->values_vec.clear();
+
+	SelectData::initSelectData();	//在析构的时候进行初始化，防止一个指令开始后没有第二条指令
 }
 
 
@@ -778,14 +779,10 @@ int sqlfunc::callback(void* callfunc, int column_num, char** values, char** colu
 
 	for (int i = 0; i < column_num; i++) {
 
-
-		//0是id，1是name， 2是age
 		//必须用指针变量来转存，callback回调时候会释放数据
 
-	
 		int value_size = sizeof(values[i]);
 		int column_size = sizeof(columns[i]);
-
 
 		char* new_value = (char*)malloc(sizeof(char) * value_size); 
 		char* new_column = (char*)malloc(sizeof(char) * column_size);
@@ -816,6 +813,7 @@ int sqlfunc::callback(void* callfunc, int column_num, char** values, char** colu
 
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas) {
 	
+	SelectData::initSelectData();
 
 	//SELECT * FROM COMPANY;
 	char sql_tablename[CHAR_MAX] = "";
@@ -857,7 +855,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 
 
 	this->initWordsVec();
-	SelectData::initSelectData();
+	
 
 	return SQLITE_OK;
 
@@ -865,6 +863,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas, void* where) {
 	
+	SelectData::initSelectData();
 
 	//where只能小于等于1
 	if (this->where_vec.size() != 1) {
@@ -923,7 +922,7 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 
 
 	this->initWordsVec();
-	SelectData::initSelectData();
+	
 	return SQLITE_OK;
 
 }
@@ -932,6 +931,7 @@ template<typename T, typename ...Args>
 int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*>>& calldatas,
 	void* where, T condition, Args ...conditions) {
 	
+	SelectData::initSelectData();
 
 	//where只能小于等于1
 	if (this->where_vec.size() != 1) {
@@ -1015,13 +1015,14 @@ int sqlfunc::selectData(const char* tablename, std::vector<std::map<char*, char*
 	}
 
 	this->initWordsVec();
-	SelectData::initSelectData();
+	
 	return SQLITE_OK;
 
 }
 
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas) {
-	
+
+	SelectData::initSelectData();	
 
 	//SELECT NAME,ID FROM USER2;
 	char sql_tablename[CHAR_MAX] = "";
@@ -1056,29 +1057,17 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 		return rec;
 	}
 
-	//std::cout << "the data vec num is: " << select_data_num << std::endl;
-	//std::cout << "***************" << std::endl;
-
-	//std::vector<std::map<char*, char*>> calldatas
-
-
 	for (int i = 0; i < select_data_num; i++) {
 		std::map<char*, char*> t_calldata;
-
 		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
 			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
 			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
 		}
-
 		calldatas.push_back(t_calldata);
-
-		//std::cout << "***************" << std::endl;
-
 	}
 
-
 	this->initWordsVec();
-	SelectData::initSelectData();
+
 	return SQLITE_OK;
 
 }
@@ -1086,9 +1075,6 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::map<char*, char*>>& calldatas, void* where) {
 	
 
-
-
-	SelectData::initSelectData();
 	return SQLITE_OK;
 
 }
