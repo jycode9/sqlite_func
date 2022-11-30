@@ -4,6 +4,54 @@
 #include <map>
 #include "../thirdparty/sqlite3.h"
 
+
+/*
+	How To Use?
+
+	//指定数据库位置。若没有不会自动创建
+	sqlfunc my_sql("../src/test.db");
+
+	//插入，指定表头
+	my_sql.insertData("USER", my_sql.Columns("ID", "NAME"), my_sql.Values("4", "'WENJY4'"));
+	//插入，按照默认表头顺序（数据库一致）
+	my_sql.insertData("USER2", my_sql.Values("1", "'NAME_1'", "10"));
+
+	//更新，指定表头
+	my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'LILI'"));
+	//更新，指定位置
+	my_sql.updateData("USER", my_sql.Columns("ID"), my_sql.Values("10"), my_sql.Where("NAME=='WENJY'"));
+	//更新，指定位置、条件
+	my_sql.updateData("USER2", my_sql.Columns("NAME"), my_sql.Values("'Sam'"), my_sql.Where("NAME=='LILI'"), my_sql.And("ID>=2", "AGE>=10"));
+
+	//删除，全部删除
+	my_sql.deleteData("USER");
+	//删除，指定位置
+	my_sql.deleteData("USER2", my_sql.Where("AGE==10"));
+	//删除，指定位置、条件
+	my_sql.deleteData("USER2", my_sql.Where("AGE==10"), my_sql.And("ID>5"), my_sql.And("NAME=='NAME_6'"));
+
+	//vector为获取的数据条数。map first为表头，map second为数据
+	std::vector<std::map<char*, char*>> my_data;
+
+	//查找，全部查找
+	my_sql.selectData("USER2", my_data);
+	//查找，指定位置
+	my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"));
+	//查找，指定位置、条件
+	my_sql.selectData("USER2", my_data, my_sql.Where("NAME=='Sam'"), my_sql.And("ID>0"));
+
+	//查找，指定表头
+	my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data);
+	//查找，指定表头、位置
+	my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data, my_sql.Where("ID>1"));
+	//查找，指定表头、位置、条件
+	my_sql.selectData("USER2", my_sql.Columns("NAME"), my_data, my_sql.Where("ID>1"), my_sql.And("ID>0"));
+*/
+
+
+
+
+
 //sqlite3的封装函数
 //因为使用了模板函数，所以函数的声明和实现都在头文件中
 namespace SelectData {
