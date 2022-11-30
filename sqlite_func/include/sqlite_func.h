@@ -5,11 +5,6 @@
 #include <sstream>
 #include "../thirdparty/sqlite3.h"
 
-struct USER2 {
-	int ID = 0;
-	std::string NAME = "";
-	int AGE = 0;
-};
 
 //select辅助语句（回调必须时静态）
 namespace SelectData {
