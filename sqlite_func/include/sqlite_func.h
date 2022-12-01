@@ -30,7 +30,7 @@ class sqlfunc {
 
 	//构造和析构
 public:
-	sqlfunc(const std::string& sqlpath);
+	sqlfunc();
 	~sqlfunc();
 
 
@@ -90,8 +90,7 @@ private:
 
 
 	//直接操作值的函数
-private:
-
+public:
 	//打开关闭
 	int openSQL(const std::string& sqlpath);
 	int closeSQL();
@@ -140,10 +139,8 @@ void sqlfunc::initWordsVec() {
 }
 
 //构造
-sqlfunc::sqlfunc(const std::string& sqlpath) {
+sqlfunc::sqlfunc() {
 	this->db = NULL;
-	//在构造的时候打开数据库
-	this->openSQL(sqlpath);
 	this->initWordsVec();
 }
 
