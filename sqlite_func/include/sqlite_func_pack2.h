@@ -1093,7 +1093,7 @@ int sqlfunc::selectData(const char* tablename, void* columns, std::vector<std::m
 		char t_column[CHAR_MAX] = "";
 
 		strcpy(t_column, this->columns_vec[i]);
-
+		callback
 		strcat(sql_word, t_column);
 
 		if (i != this->columns_vec.size() - 1) {

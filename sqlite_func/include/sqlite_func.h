@@ -44,7 +44,8 @@ private:
 	std::vector<std::string> and_vec;
 	std::vector<std::string> or_vec;
 
-	
+	//回调函数
+	static int callback(void* callfunc, int column_num, char** values, char** columns);
 
 
 	//语句函数
@@ -77,7 +78,7 @@ public:
 
 
 	//辅助的函数
-public:
+private:
 	//将任意类型转为string
 	template <typename T>
 	std::string convertAnyToString(T data);
@@ -88,45 +89,40 @@ public:
 
 
 	//直接操作值的函数
-public:
+private:
 
 	//打开关闭
 	int openSQL(const std::string& sqlpath);
 	int closeSQL();
 
-	//插入，指定表头
-	int insertData(const std::string& tablename, void* columns, void* values);
-	//插入，默认排序（v2中没有使用）
-	int insertData(const std::string& tablename, void* values);
 
-	//更新，指定where
-	int updateData(const std::string& tablename, void* columns, void* values, void* where);
+public:
+	//所有函数情况集成为一个，判断对应语句的vec大小。如果vec为空，则不添加语句关键字即可
+	//插入，指定表头（当columns为NULL时，使用默认排序）
+	int insertData(const std::string& tablename, void* columns, void* values);
+
+	//更新，指定where，and，or
+	template<typename T, typename ...Args>
+	int updateData(const std::string& tablename, void* columns, void* values, void* where, T condition, Args ...conditions);
 
 	//查找，指定where，and，or
+	template<typename T, typename ...Args>
+	int selectData(const std::string& tablename, std::vector<std::unordered_map<std::string, std::string>>& calldatas,
+		void* where, T condition, Args ...conditions);
 
+	//删除，指定where，and，or
+	template<typename T, typename ...Args>
+	int deleteData(const std::string& tablename, void* where, T condition, Args ...conditions);
 
 
 	//使用map做指引的智能函数
 public:
 	//插入，按照map
-	//map第一个元素为主键
 	int insertData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
 
 	//更新，按照map
 	//map第一个元素为主键
 	int updateData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
-
-	//查找，按照vec<map>
-	//指定有内容的map主键作为where、and，当查找多个数据时分别插入vec中
-	//将map的数据设空，则自动返回全部
-	int selectData_v2(const std::string& tablename, std::vector<std::unordered_map<std::string, std::string>>& values);
-
-	//删除，按照map
-	//指定有内容的map主键作为where、add
-	int deleteData_v2(const std::string& tablename, std::unordered_map<std::string, std::string>& values);
-
-	//删除，全部
-	int deleteData_v2(const std::string& tablename);
 
 };
 
@@ -274,7 +270,13 @@ void* sqlfunc::Where(const std::string& condition) {
 template<typename T>
 void* sqlfunc::And(T condition) {
 
-	this->and_vec.push_back(this->convertAnyToString(condition));
+	if (this->convertAnyToString(condition) == "") {
+		std::cout << "and null" << std::endl;
+	}
+	else {
+		this->and_vec.push_back(this->convertAnyToString(condition));
+	}
+	
 
 	return SQLITE_OK;
 }
@@ -282,7 +284,12 @@ void* sqlfunc::And(T condition) {
 template<typename T, typename ...Args>
 void* sqlfunc::And(T condition, Args ...conditions) {
 
-	this->and_vec.push_back(this->convertAnyToString(condition));
+	if (this->convertAnyToString(condition) == "") {
+		std::cout << "and null" << std::endl;
+	}
+	else {
+		this->and_vec.push_back(this->convertAnyToString(condition));
+	}
 	this->And(conditions...);
 
 	return SQLITE_OK;
@@ -291,14 +298,26 @@ void* sqlfunc::And(T condition, Args ...conditions) {
 
 template<typename T>
 void* sqlfunc::Or(T condition) {
-	this->or_vec.push_back(this->convertAnyToString(condition));
+
+	if (this->convertAnyToString(condition) == "") {
+		std::cout << "or null" << std::endl;
+	}
+	else {
+		this->or_vec.push_back(this->convertAnyToString(condition));
+	}
+	
 
 	return SQLITE_OK;
 }
 
 template<typename T, typename ...Args>
 void* sqlfunc::Or(T condition, Args ...conditions) {
-	this->or_vec.push_back(this->convertAnyToString(condition));
+	if (this->convertAnyToString(condition) == "") {
+		std::cout << "or null" << std::endl;
+	}
+	else {
+		this->or_vec.push_back(this->convertAnyToString(condition));
+	}
 	this->Or(conditions...);
 
 	return SQLITE_OK;
@@ -309,18 +328,14 @@ void* sqlfunc::Or(T condition, Args ...conditions) {
 int sqlfunc::insertData(const std::string& tablename, void* columns, void* values) {
 	//INSERT INTO USER(ID,NAME,SCORE) VALUES(1,'WENJY',20.98);
 
-	//检测columns_vec和values_vec的大小是否相等
-	if (this->columns_vec.size() != this->values_vec.size()) {
-		this->initWordsVec();
-		std::cout << "columns'num and values'num not equal" << std::endl;
-		return SQLITE_ERROR;
-
-	}
-
 	std::string sql_tablename = tablename;
-	std::string sql_columns = "(";
+	std::string sql_columns = "";
 	std::string sql_values = "VALUES(";
 	std::string sql_word = "INSERT INTO " + sql_tablename;
+
+	if (this->columns_vec.size() != 0) {
+		sql_columns = sql_columns + "(";
+	}
 
 	for (unsigned int i = 0; i < this->columns_vec.size(); i++) {
 
@@ -330,7 +345,11 @@ int sqlfunc::insertData(const std::string& tablename, void* columns, void* value
 			sql_columns = sql_columns + ",";
 		}
 	}
-	sql_columns = sql_columns + ") ";
+
+	if (this->columns_vec.size() != 0) {
+		sql_columns = sql_columns + ")";
+	}
+	
 
 	for (unsigned int i = 0; i < this->values_vec.size(); i++) {
 
@@ -342,7 +361,7 @@ int sqlfunc::insertData(const std::string& tablename, void* columns, void* value
 	}
 	sql_values = sql_values + ");";
 
-	sql_word = sql_word + sql_columns + sql_values;
+	sql_word = sql_word + sql_columns + " " + sql_values;
 	std::cout << "sql words is: " << sql_word << std::endl;
 
 	char sql_word_c[CHAR_MAX] = "";
@@ -358,47 +377,12 @@ int sqlfunc::insertData(const std::string& tablename, void* columns, void* value
 	this->initWordsVec();
 	return SQLITE_OK;
 }
-
-//插入，默认排序
-int sqlfunc::insertData(const std::string& tablename, void* values) {
-	//INSERT INTO USER VALUES(1,'WENJY',20.98);
-
-	std::string sql_tablename = tablename + " ";
-	std::string sql_values = "VALUES(";
-	std::string sql_word = "INSERT INTO " + sql_tablename;
-
-	for (unsigned int i = 0; i < this->values_vec.size(); i++) {
-
-		std::string t_value = this->values_vec[i];
-		sql_values = sql_values + "'" + t_value + "'";
-		if (i != this->values_vec.size() - 1) {
-			sql_values = sql_values + ",";
-		}
-	}
-	sql_values = sql_values + ");";
-
-	sql_word = sql_word + sql_values;
-	std::cout << "sql words is: " << sql_word << std::endl;
-
-	char sql_word_c[CHAR_MAX] = "";
-	strcpy(sql_word_c, (char*)sql_word.c_str());
-	int rec = sqlite3_exec(this->db, sql_word_c, NULL, NULL, NULL);
-	if (rec != SQLITE_OK) {
-		std::cout << "insert data fail, errorcode is: " << rec << std::endl;
-		this->initWordsVec();
-		return rec;
-	}
-
-	//指令完成后进行初始化。在函数头不能进行，因为函数头已经将辅助语句函数执行完，会清空
-	this->initWordsVec();
-	return SQLITE_OK;
-}
-
 
 
 //更新，指定where
-int sqlfunc::updateData(const std::string& tablename, void* columns, void* values, void* where) {
-	//UPDATE USER2 SET NAME='Sam',AGE=23 WHERE ID=6;
+template<typename T, typename ...Args>
+int sqlfunc::updateData(const std::string& tablename, void* columns, void* values, void* where, T condition, Args ...conditions) {
+	//UPDATE USER2 SET NAME='Sam',AGE=23 WHERE ID=6 AND AGE>=20 AND AGE<=90;
 
 	//检测columns_vec和values_vec的大小是否相等
 	if (this->columns_vec.size() != this->values_vec.size()) {
@@ -407,16 +391,19 @@ int sqlfunc::updateData(const std::string& tablename, void* columns, void* value
 		return SQLITE_ERROR;
 	}
 
-	//where只能等于1
-	if (this->where_vec.size() != 1) {
-		this->initWordsVec();
-		std::cout << "where's num != 1" << std::endl;
-		return SQLITE_ERROR;
-	}
+	////where只能等于1
+	////如果where为0，则修改整个表
+	//if (this->where_vec.size() != 1) {
+	//	this->initWordsVec();
+	//	std::cout << "where's num != 1" << std::endl;
+	//	return SQLITE_ERROR;
+	//}
 
 	std::string sql_tablename = tablename;
 	std::string sql_set = "SET ";
-	std::string sql_where = "WHERE ";
+	std::string sql_where = "";
+	std::string sql_and = "";
+	std::string sql_or = "";
 	std::string sql_word = "UPDATE " + sql_tablename + " ";
 
 	//拼接set
@@ -428,12 +415,28 @@ int sqlfunc::updateData(const std::string& tablename, void* columns, void* value
 		}
 		sql_set = sql_set + t_set;
 	}
-	sql_set = sql_set + " ";
+	sql_set = sql_set;
 
 	//where条件
-	sql_where = sql_where + this->where_vec[0];
+	if (this->where_vec.size() == 1) {
+		sql_where = sql_where + " WHERE " + this->where_vec[0];
+	}
 
-	sql_word = sql_word + sql_set + sql_where + ";";
+	//and
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		std::string t_and = "";
+		t_and = t_and + " AND " + this->and_vec[i];
+		sql_and = sql_and + t_and;
+	}
+
+	//or
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		std::string t_or = "";
+		t_or = t_or + " OR " + this->or_vec[i];
+		sql_or = sql_or + t_or;
+	}
+
+	sql_word = sql_word + sql_set + sql_where + sql_and + sql_or + ";";
 	std::cout << "sql words is: " << sql_word << std::endl;
 
 	char sql_word_c[CHAR_MAX] = "";
@@ -449,6 +452,161 @@ int sqlfunc::updateData(const std::string& tablename, void* columns, void* value
 	this->initWordsVec();
 	return SQLITE_OK;
 }
+
+
+int sqlfunc::callback(void* callfunc, int column_num, char** values, char** columns) {
+
+	std::vector<std::string> t_column_vec;
+	std::vector<std::string> t_value_vec;
+
+	for (int i = 0; i < column_num; i++) {
+
+		std::string new_value = values[i];
+		std::string new_column = columns[i];
+
+		t_column_vec.push_back(new_column);
+		t_value_vec.push_back(new_value);
+
+	}
+
+	SelectData::select_columns.push_back(t_column_vec);
+	SelectData::select_values.push_back(t_value_vec);
+
+	SelectData::select_data_num++;
+
+	return SQLITE_OK;
+}
+
+
+
+//查找，指定where，and，or
+template<typename T, typename ...Args>
+int sqlfunc::selectData(const std::string& tablename, std::vector<std::unordered_map<std::string, std::string>>& calldatas,
+	void* where, T condition, Args ...conditions) {
+	//SELECT * FROM COMPANY WHERE NAME='Sam' AND ID>1 OR ID<5;
+
+	//where只能为1
+	if (this->where_vec.size() != 1) {
+		this->initWordsVec();
+		std::cout << "where's num != 1" << std::endl;
+		return SQLITE_ERROR;
+	}
+
+	std::string sql_tablename = tablename;
+	std::string sql_where = "";
+	std::string sql_and = "";
+	std::string sql_or = "";
+
+	std::string sql_word = "SELECT * FROM ";
+
+
+	//where
+	if (this->where_vec.size() == 1) {
+		sql_where = sql_where + "WHERE " + this->where_vec[0];
+	}
+
+	//and
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		std::string t_and = "";
+		t_and = t_and + " AND " + this->and_vec[i];
+		sql_and = sql_and + t_and;
+	}
+
+	//or
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		std::string t_or = "";
+		t_or = t_or + " OR " + this->or_vec[i];
+		sql_or = sql_or + t_or;
+	}
+
+	sql_word = sql_word + sql_tablename + " " + sql_where + sql_and + sql_or + ";";
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+	char sql_word_c[CHAR_MAX] = "";
+	strcpy(sql_word_c, (char*)sql_word.c_str());
+
+	int rec = sqlite3_exec(this->db, sql_word_c, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	
+
+
+	for (int i = 0; i < SelectData::select_data_num; i++) {
+		std::unordered_map<std::string, std::string> t_calldata;
+		//std::cout << "**********the " << i << " data * *********" << std::endl;
+		for (int j = 0; j < SelectData::select_columns[i].size(); j++) {
+			//std::cout << "the column, value is: " << SelectData::select_columns[i][j] << ", " << SelectData::select_values[i][j] << std::endl;
+			t_calldata[SelectData::select_columns[i][j]] = SelectData::select_values[i][j];
+		}
+
+		calldatas.push_back(t_calldata);
+	}
+
+	this->initWordsVec();
+
+	return SQLITE_OK;
+}
+
+
+
+template<typename T, typename ...Args>
+int sqlfunc::deleteData(const std::string& tablename, void* where, T condition, Args ...conditions) {
+	//DELETE FROM COMPANY WHERE NAME='Sam' AND ID>1 OR ID<5;
+
+	std::string sql_tablename = tablename;
+	std::string sql_where = "";
+	std::string sql_and = "";
+	std::string sql_or = "";
+
+	std::string sql_word = "DELETE FROM ";
+
+
+	//where
+	if (this->where_vec.size() == 1) {
+		sql_where = sql_where + " WHERE " + this->where_vec[0];
+	}
+
+	//and
+	for (unsigned int i = 0; i < this->and_vec.size(); i++) {
+		std::string t_and = "";
+		t_and = t_and + " AND " + this->and_vec[i];
+		sql_and = sql_and + t_and;
+	}
+
+	//or
+	for (unsigned int i = 0; i < this->or_vec.size(); i++) {
+		std::string t_or = "";
+		t_or = t_or + " OR " + this->or_vec[i];
+		sql_or = sql_or + t_or;
+	}
+
+	sql_word = sql_word + sql_tablename + sql_where + sql_and + sql_or + ";";
+
+	std::cout << "sql words is: " << sql_word << std::endl;
+	char sql_word_c[CHAR_MAX] = "";
+	strcpy(sql_word_c, (char*)sql_word.c_str());
+
+	int rec = sqlite3_exec(this->db, sql_word_c, &this->callback, NULL, NULL);
+
+	if (rec != SQLITE_OK) {
+		std::cout << "delete data fail, errorcode is: " << rec << std::endl;
+		this->initWordsVec();
+		return rec;
+	}
+
+	this->initWordsVec();
+
+	return SQLITE_OK;
+
+}
+
+
+
 
 
 
@@ -513,7 +671,7 @@ int sqlfunc::updateData_v2(const std::string& tablename, std::unordered_map<std:
 	this->Where(t_where);
 
 	//调用原始函数
-	int rec = this->updateData(tablename, this->Columns(""), this->Values(""), this->Where(""));
+	int rec = this->updateData(tablename, NULL, NULL, NULL, NULL);
 
 	if (rec != SQLITE_OK) {
 		return rec;
@@ -522,6 +680,4 @@ int sqlfunc::updateData_v2(const std::string& tablename, std::unordered_map<std:
 
 
 }
-
-
 

@@ -49,28 +49,40 @@ void functest() {
 	char* testchar = "Wen18";
 	//my_sql.insertData(test_tablename, my_sql.Values(18, 18, testchar));
 
-	//for (int i = 0; i < my_data.size(); i++) {
-	//	std::cout << "************" << std::endl;
-	//	for (auto itr = my_data[i].begin(); itr != my_data[i].end(); itr++) {
-	//		
-	//		std::cout << (*itr).first << std::endl;
-	//		std::cout << (*itr).second << std::endl;
-	//	}
-	//}
+
 
 
 	//因为struct无法拿到内容，可以用map
 	std::vector<std::unordered_map<std::string, std::string>> vec_user2;
 	std::unordered_map<std::string, std::string> map_user2;
-	map_user2["ID"] = "20";
-	map_user2["AGE"] = "15";
-	map_user2["NAME"] = "Peter";
+	map_user2["ID"] = "";
+	map_user2["AGE"] = "10";
+	map_user2["NAME"] = "Sam";
+	vec_user2.push_back(map_user2);
 	//注意map的column必须完整。insert会限制，并且无法插入相同的主键
 	//my_sql.insertData_v2("USER2", map_user2);
 
-	//my_sql.updateData("USER2", my_sql.Columns("AGE","NAME"), my_sql.Values(23,"Sam"), my_sql.Where("ID=19"));
+	//my_sql.updateData("USER2", my_sql.Columns("AGE","NAME"), my_sql.Values(23,"Sam"), NULL, NULL);
 	//注意map的0项必须为该数据的主键，它将作为update的索引
 	//my_sql.updateData_v2("USER2", map_user2);
+
+
+	//my_sql.selectData("USER2", my_data, my_sql.Where("ID>1"), my_sql.And("ID<7"), my_sql.Or(""));
+	//调用多个条件直接叠加，不需要and、or直接null即可
+	//my_sql.selectData("USER2", my_data, NULL, NULL);
+	//for (int i = 0; i < my_data.size(); i++) {
+	//	std::cout << "****the " << i << " data****" << std::endl;
+	//	for (auto iter = my_data[i].begin(); iter != my_data[i].end(); iter++) {
+	//		std::cout << "the column, value is: " << (*iter).first << ", " << (*iter).second << std::endl;
+	//	}
+	//}
+
+
+	//my_sql.insertData("USER2", my_sql.Columns("NAME", "ID", "AGE"), my_sql.Values("TEST",32, 32));
+	
+    //my_sql.deleteData("USER2", my_sql.Where("AGE>0"), my_sql.And("ID>=30"));
+	//my_sql.deleteData("USER2", my_sql.Where("AGE>0"), NULL);
+	//my_sql.deleteData("USER", NULL, NULL);
 
 }
 
