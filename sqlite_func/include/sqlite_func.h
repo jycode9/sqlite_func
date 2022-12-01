@@ -7,7 +7,8 @@
 #include "../thirdparty/sqlite3.h"
 
 
-//select辅助语句（回调必须时静态）
+
+//select辅助语句（回调必须静态）
 namespace SelectData {
 
 	int select_data_num;
@@ -366,9 +367,11 @@ int sqlfunc::insertData(const std::string& tablename, void* columns, void* value
 
 	char sql_word_c[CHAR_MAX] = "";
 	strcpy(sql_word_c, (char*)sql_word.c_str());
-	int rec = sqlite3_exec(this->db, sql_word_c, NULL, NULL, NULL);
+	char* err_msg_c="";
+	int rec = sqlite3_exec(this->db, sql_word_c, NULL, NULL, &err_msg_c);
 	if (rec != SQLITE_OK) {
 		std::cout << "insert data fail, errorcode is: " << rec << std::endl;
+		std::cout << "err msg is: " << err_msg_c << std::endl;
 		this->initWordsVec();
 		return rec;
 	}
@@ -390,14 +393,6 @@ int sqlfunc::updateData(const std::string& tablename, void* columns, void* value
 		std::cout << "columns'num != values'num" << std::endl;
 		return SQLITE_ERROR;
 	}
-
-	////where只能等于1
-	////如果where为0，则修改整个表
-	//if (this->where_vec.size() != 1) {
-	//	this->initWordsVec();
-	//	std::cout << "where's num != 1" << std::endl;
-	//	return SQLITE_ERROR;
-	//}
 
 	std::string sql_tablename = tablename;
 	std::string sql_set = "SET ";
@@ -441,9 +436,11 @@ int sqlfunc::updateData(const std::string& tablename, void* columns, void* value
 
 	char sql_word_c[CHAR_MAX] = "";
 	strcpy(sql_word_c, (char*)sql_word.c_str());
-	int rec = sqlite3_exec(this->db, sql_word_c, NULL, NULL, NULL);
+	char* err_msg = "";
+	int rec = sqlite3_exec(this->db, sql_word_c, NULL, NULL, &err_msg);
 	if (rec != SQLITE_OK) {
 		std::cout << "update data fail, errorcode is: " << rec << std::endl;
+		std::cout << "err msg is: " << err_msg << std::endl;
 		this->initWordsVec();
 		return rec;
 	}
@@ -485,13 +482,6 @@ int sqlfunc::selectData(const std::string& tablename, std::vector<std::unordered
 	void* where, T condition, Args ...conditions) {
 	//SELECT * FROM COMPANY WHERE NAME='Sam' AND ID>1 OR ID<5;
 
-	//where只能为1
-	if (this->where_vec.size() != 1) {
-		this->initWordsVec();
-		std::cout << "where's num != 1" << std::endl;
-		return SQLITE_ERROR;
-	}
-
 	std::string sql_tablename = tablename;
 	std::string sql_where = "";
 	std::string sql_and = "";
@@ -524,17 +514,15 @@ int sqlfunc::selectData(const std::string& tablename, std::vector<std::unordered
 	std::cout << "sql words is: " << sql_word << std::endl;
 	char sql_word_c[CHAR_MAX] = "";
 	strcpy(sql_word_c, (char*)sql_word.c_str());
-
-	int rec = sqlite3_exec(this->db, sql_word_c, &this->callback, NULL, NULL);
+	char* err_msg = "";
+	int rec = sqlite3_exec(this->db, sql_word_c, &this->callback, NULL, &err_msg);
 
 	if (rec != SQLITE_OK) {
 		std::cout << "select data fail, errorcode is: " << rec << std::endl;
+		std::cout << "err msg is: " << err_msg << std::endl;
 		this->initWordsVec();
 		return rec;
 	}
-
-	
-
 
 	for (int i = 0; i < SelectData::select_data_num; i++) {
 		std::unordered_map<std::string, std::string> t_calldata;
@@ -548,7 +536,6 @@ int sqlfunc::selectData(const std::string& tablename, std::vector<std::unordered
 	}
 
 	this->initWordsVec();
-
 	return SQLITE_OK;
 }
 
@@ -590,11 +577,11 @@ int sqlfunc::deleteData(const std::string& tablename, void* where, T condition, 
 	std::cout << "sql words is: " << sql_word << std::endl;
 	char sql_word_c[CHAR_MAX] = "";
 	strcpy(sql_word_c, (char*)sql_word.c_str());
-
-	int rec = sqlite3_exec(this->db, sql_word_c, &this->callback, NULL, NULL);
-
+	char* err_msg = "";
+	int rec = sqlite3_exec(this->db, sql_word_c, &this->callback, NULL, &err_msg);
 	if (rec != SQLITE_OK) {
 		std::cout << "delete data fail, errorcode is: " << rec << std::endl;
+		std::cout << "err msg is: " << err_msg << std::endl;
 		this->initWordsVec();
 		return rec;
 	}
@@ -631,7 +618,7 @@ int sqlfunc::insertData_v2(const std::string & tablename, std::unordered_map<std
 	}
 
 	//调用原始函数
-	int rec = this->insertData(tablename, this->Columns(""), this->Values(""));
+	int rec = this->insertData(tablename, NULL, NULL);
 
 	if (rec != SQLITE_OK) {
 		return rec;
